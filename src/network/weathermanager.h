@@ -29,7 +29,7 @@ private:
 
     // 【修改点 1】 配置心知天气的 Key 和 Host
     // 你的私钥 (Private Key)
-    const QString API_KEY = "Sn7ufFZTCM_nYO_bP";
+    const QString API_KEY = "Sn7ufFZTCm_nYO_bP";
     // 心知天气通用域名
     const QString API_HOST = "https://api.seniverse.com";
 
