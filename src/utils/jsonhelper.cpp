@@ -1,4 +1,5 @@
 #include "jsonhelper.h"
+#include <QDateTime> // 记得包含这个
 
 JsonHelper::JsonHelper() {}
 
@@ -26,11 +27,20 @@ TodayWeather JsonHelper::parseWeatherJson(const QByteArray &data)
     // 2. 解析实况天气 (now)
     if (root.contains("now")) {
         QJsonObject now = root["now"].toObject();
-        today.wendu = now["temperature"].toString(); // 心知天气返回的是字符串
-        today.text = now["text"].toString();
-        today.type = now["code"].toString(); // 图标代码
 
-        // 今天的日期暂时用系统日期，或者从 daily 列表里取
+        // 【修改点】结构体里叫 wendu，类型是 String
+        today.wendu = now["temperature"].toString();
+
+        // 【修改点】结构体里叫 type，我们把 "晴" 这种文字存进去
+        today.type = now["text"].toString();
+
+        // 注意：你的结构体里没有专门存 icon 代码的字段，暂时忽略 code
+        // today.code = now["code"].toString();
+
+        today.shidu = now["humidity"].toString();
+        today.pm25 = "0"; // 心知免费版now接口通常不含pm25，给个默认值
+        today.quality = "无";
+
         today.date = QDateTime::currentDateTime().toString("yyyy-MM-dd");
     }
 
@@ -43,19 +53,22 @@ TodayWeather JsonHelper::parseWeatherJson(const QByteArray &data)
             DayWeather day;
 
             day.date = dayObj["date"].toString();
-            day.text_day = dayObj["text_day"].toString();
-            day.code_day = dayObj["code_day"].toString();
 
-            // 注意：心知返回的温度是字符串，需要转 int 方便后续画图
+            // 【修改点】结构体里叫 type，把 "text_day" ("多云") 存进去
+            day.type = dayObj["text_day"].toString();
+
+            // 【修改点】你的结构体没有 code_day，这行删掉/注释掉
+            // day.code_day = dayObj["code_day"].toString();
+
             day.high = dayObj["high"].toString().toInt();
             day.low = dayObj["low"].toString().toInt();
 
             day.fengxiang = dayObj["wind_direction"].toString();
             day.fengli = dayObj["wind_scale"].toString();
 
-            // 简单的星期计算
+            // 补全星期
             QDate dateObj = QDate::fromString(day.date, "yyyy-MM-dd");
-            day.week = dateObj.toString("dddd"); // "星期X"
+            day.week = dateObj.toString("dddd");
 
             today.forecast.append(day);
         }
