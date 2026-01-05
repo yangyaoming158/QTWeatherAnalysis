@@ -37,7 +37,12 @@ TodayWeather JsonHelper::parseWeatherJson(const QByteArray &data)
         // 注意：你的结构体里没有专门存 icon 代码的字段，暂时忽略 code
         // today.code = now["code"].toString();
 
-        today.shidu = now["humidity"].toString();
+        // 【修改为】带默认值
+        if (now.contains("humidity")) {
+            today.shidu = now["humidity"].toString();
+        } else {
+            today.shidu = "0"; // 或者 "N/A"
+        }
         today.pm25 = "0"; // 心知免费版now接口通常不含pm25，给个默认值
         today.quality = "无";
 
@@ -68,7 +73,9 @@ TodayWeather JsonHelper::parseWeatherJson(const QByteArray &data)
 
             // 补全星期
             QDate dateObj = QDate::fromString(day.date, "yyyy-MM-dd");
-            day.week = dateObj.toString("dddd");
+            // 【修改为】强制使用中文环境
+            QLocale locale(QLocale::Chinese, QLocale::China);
+            day.week = locale.toString(dateObj, "dddd");
 
             today.forecast.append(day);
         }
