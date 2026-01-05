@@ -33,6 +33,7 @@ set(PROJECT_SOURCES
     src/ui/mainwindow.ui
     src/data/dbmanager.cpp
     src/data/dbmanager.h
+    src/data/weatherdata.h
     # 你将来要添加的文件（暂时先注释掉，等创建了再解开）
     src/network/weathermanager.cpp
     src/network/weathermanager.h
