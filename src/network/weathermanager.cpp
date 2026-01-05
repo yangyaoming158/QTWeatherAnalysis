@@ -25,7 +25,9 @@ void WeatherManager::requestNowWeather()
     QString urlStr = QString("%1/v3/weather/now.json?key=%2&location=%3&language=zh-Hans&unit=c")
                          .arg(API_HOST, API_KEY, m_currentCityId);
 
-    QNetworkRequest request(QUrl(urlStr)); // 注意这里要转 QUrl
+    // 修改后：
+    QUrl url(urlStr);            // 1. 先把字符串转成 URL 对象
+    QNetworkRequest request(url); // 2. 再把 URL 放进 Request
     QNetworkReply *reply = m_manager->get(request);
 
     connect(reply, &QNetworkReply::finished, this, [=]() {
@@ -64,7 +66,9 @@ void WeatherManager::requestDailyWeather()
     QString urlStr = QString("%1/v3/weather/daily.json?key=%2&location=%3&language=zh-Hans&unit=c&start=0&days=3")
                          .arg(API_HOST, API_KEY, m_currentCityId);
 
-    QNetworkRequest request(QUrl(urlStr));
+    // 修改后：
+    QUrl url(urlStr);            // 1. 先把字符串转成 URL 对象
+    QNetworkRequest request(url); // 2. 再把 URL 放进 Request
     QNetworkReply *reply = m_manager->get(request);
 
     connect(reply, &QNetworkReply::finished, this, [=]() {
