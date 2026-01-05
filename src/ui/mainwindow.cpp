@@ -58,45 +58,80 @@ void MainWindow::updateUI(const TodayWeather &weather)
 
 void MainWindow::drawTempChart(const QList<DayWeather> &forecast)
 {
-    // 如果没有提升 QChartView，这行代码会报错，请确保在 UI 设计器里完成了提升
-    // 并且 CMakeLists.txt 里包含了 Charts 模块
+    // 如果没有数据，直接返回，防止崩溃
+    if (forecast.isEmpty()) return;
 
     QChart *chart = new QChart();
-    chart->setTitle("未来几天温度趋势");
 
-    // 创建高温曲线
+    // --- 1. 背景透明化 ---
+    chart->setBackgroundRoundness(0);
+    chart->setBackgroundVisible(false); // 隐藏图表背景，透出窗口背景
+
+    // --- 2. 设置标题 ---
+    chart->setTitle("未来气温趋势");
+    chart->setTitleBrush(Qt::white); // 标题白色
+    chart->legend()->setVisible(false); // 隐藏图例
+
+    // --- 3. 创建曲线 ---
     QLineSeries *highSeries = new QLineSeries();
-    highSeries->setName("最高温");
-    // 创建低温曲线
     QLineSeries *lowSeries = new QLineSeries();
-    lowSeries->setName("最低温");
 
-    // 填充数据
+    // --- 4. 填充数据并计算极值 ---
+    int minTemp = 100; // 初始设一个很大的数
+    int maxTemp = -100; // 初始设一个很小的数
     QStringList categories;
+
     for (int i = 0; i < forecast.size(); ++i) {
         highSeries->append(i, forecast[i].high);
         lowSeries->append(i, forecast[i].low);
-        categories << forecast[i].week; // X轴标签：星期几
+        categories << forecast[i].week; // X轴标签
+
+        // 动态计算最大最小值，用于自动缩放Y轴
+        if (forecast[i].low < minTemp) minTemp = forecast[i].low;
+        if (forecast[i].high > maxTemp) maxTemp = forecast[i].high;
     }
 
     chart->addSeries(highSeries);
     chart->addSeries(lowSeries);
 
-    // 创建坐标轴
+    // --- 5. 线条美化与数值显示 ---
+    QPen highPen(Qt::red);
+    highPen.setWidth(3);
+    highSeries->setPen(highPen);
+    highSeries->setPointLabelsVisible(true);        // 显示数值
+    highSeries->setPointLabelsFormat("@yPoint°");   // 格式：数值°
+    highSeries->setPointLabelsColor(Qt::white);     // 白色字
+
+    QPen lowPen(Qt::blue);
+    lowPen.setWidth(3);
+    lowSeries->setPen(lowPen);
+    lowSeries->setPointLabelsVisible(true);
+    lowSeries->setPointLabelsFormat("@yPoint°");
+    lowSeries->setPointLabelsColor(Qt::white);
+
+    // --- 6. 坐标轴设置 ---
     QBarCategoryAxis *axisX = new QBarCategoryAxis();
     axisX->append(categories);
+    axisX->setLabelsColor(Qt::white);
+    axisX->setGridLineVisible(false); // 隐藏竖向网格线，更清爽
     chart->addAxis(axisX, Qt::AlignBottom);
     highSeries->attachAxis(axisX);
     lowSeries->attachAxis(axisX);
 
     QValueAxis *axisY = new QValueAxis();
-    axisY->setRange(-10, 40); // 根据实际情况动态调整更好，这里先写死
-    axisY->setLabelFormat("%d°C");
+    // 动态设置范围：上下各留 3 度缓冲空间
+    axisY->setRange(minTemp - 3, maxTemp + 3);
+    // 修复乱码：使用 Unicode 编码显示 °C
+    axisY->setLabelFormat(QString("%d%1C").arg(QChar(0x00B0)));
+    axisY->setLabelsColor(Qt::white);
+    axisY->setGridLineVisible(true);
     chart->addAxis(axisY, Qt::AlignLeft);
     highSeries->attachAxis(axisY);
     lowSeries->attachAxis(axisY);
 
-    // 显示图表
+    // --- 7. 显示 ---
     ui->chartView->setChart(chart);
-    ui->chartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿，线条更平滑
+    ui->chartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
+    ui->chartView->setStyleSheet("background: transparent"); // View 本身透明
 }
+
