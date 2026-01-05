@@ -106,7 +106,13 @@ void MainWindow::drawTempChart(const QList<DayWeather> &forecast)
     for (int i = 0; i < forecast.size(); ++i) {
         highSeries->append(i, forecast[i].high);
         lowSeries->append(i, forecast[i].low);
-        categories << forecast[i].week; // X轴标签
+        // 【修改点：优化 X 轴标签】
+        // 原代码: categories << list[i].week;
+
+        // 新代码: 解析日期字符串 "2026-01-05" -> "01/05 周一"
+        QDate date = QDate::fromString(forecast[i].date, "yyyy-MM-dd");
+        QString label = date.toString("MM/dd") + "\n" + forecast[i].week; // \n 换行显示更美观
+        categories << label;
 
         // 动态计算最大最小值，用于自动缩放Y轴
         if (forecast[i].low < minTemp) minTemp = forecast[i].low;
