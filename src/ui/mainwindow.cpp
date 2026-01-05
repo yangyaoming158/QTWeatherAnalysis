@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include "jsonhelper.h"
 #include <QMessageBox>
-
+#include "dbmanager.h"
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -29,9 +29,25 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btn_Search_clicked()
 {
-    QString city = ui->lineEdit_City->text().trimmed();
-    if (!city.isEmpty()) {
-        m_weatherMgr->getWeather(city);
+    QString cityId = ui->lineEdit_City->text().trimmed();
+    if (cityId.isEmpty()) return;
+
+    // 1. 先尝试从数据库获取缓存
+    // 注意：cityId 在这里就是用户输入的拼音，如 "beijing"
+    QByteArray cachedData = DBManager::getInstance().getWeatherCache(cityId);
+
+    if (!cachedData.isEmpty()) {
+        qDebug() << "命中缓存，使用数据库数据 -> " << cityId;
+
+        // 2. 如果有缓存且没过期，直接解析显示
+        TodayWeather weather = JsonHelper::parseWeatherJson(cachedData);
+        updateUI(weather);
+    }
+    else {
+        qDebug() << "无缓存或已过期，发起网络请求 -> " << cityId;
+
+        // 3. 如果没缓存，发起网络请求
+        m_weatherMgr->getWeather(cityId);
     }
 }
 
@@ -42,6 +58,12 @@ void MainWindow::onWeatherReceived(QString cityId, QByteArray data)
 
     // 2. 更新界面
     updateUI(weather);
+
+    // 3. 【新增】存入数据库缓存
+    // 这里的 weather.city 是中文名（如“北京”），cityId 是拼音（如“beijing”）
+    DBManager::getInstance().cacheWeather(cityId, weather.city, data);
+
+    qDebug() << "数据已更新并缓存数据库";
 }
 
 void MainWindow::updateUI(const TodayWeather &weather)
