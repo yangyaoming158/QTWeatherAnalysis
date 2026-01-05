@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "src/utils/jsonhelper.h"
+#include "jsonhelper.h"
 #include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
