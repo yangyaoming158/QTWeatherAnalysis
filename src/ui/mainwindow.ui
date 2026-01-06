@@ -97,6 +97,13 @@ QPushButton:pressed {
        </spacer>
       </item>
       <item>
+       <widget class="QPushButton" name="btn_History">
+        <property name="text">
+         <string>历史</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
          <widget class="QLineEdit" name="lineEdit_City">

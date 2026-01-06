@@ -24,6 +24,7 @@ private slots:
 
     // 接收到天气数据的槽函数
     void onWeatherReceived(QString cityId, QByteArray data);
+    void on_btn_History_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -33,6 +34,6 @@ private:
     void updateUI(const TodayWeather &weather);
 
     // 【核心】绘制温度折线图
-    void drawTempChart(const QList<DayWeather> &forecast);
+    void drawTempChart(const QList<DayWeather> &list,QString title = "气温趋势");
 };
 #endif // MAINWINDOW_H

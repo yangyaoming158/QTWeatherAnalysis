@@ -82,10 +82,10 @@ void MainWindow::updateUI(const TodayWeather &weather)
     ui->lbl_Shidu->setText("湿度: " + weather.shidu + "%");
 
     // 绘制图表
-    drawTempChart(weather.forecast);
+    drawTempChart(weather.forecast,"未来气温趋势");
 }
 
-void MainWindow::drawTempChart(const QList<DayWeather> &list)
+void MainWindow::drawTempChart(const QList<DayWeather> &list,QString title)
 {
     if (list.isEmpty()) return;
 
@@ -126,6 +126,10 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list)
     chart->addSeries(highSeries);
     chart->addSeries(lowSeries);
 
+    // 【修改点】使用传入的标题
+    chart->setTitle(title);
+    chart->setTitleBrush(Qt::white);
+
     // 4. 设置线条样式 (保持不变)
     QPen highPen(Qt::red); highPen.setWidth(3); highSeries->setPen(highPen);
     highSeries->setPointLabelsVisible(true); highSeries->setPointLabelsFormat("@yPoint°"); highSeries->setPointLabelsColor(Qt::white);
@@ -157,5 +161,36 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list)
     ui->chartView->setChart(chart);
     ui->chartView->setRenderHint(QPainter::Antialiasing);
     ui->chartView->setStyleSheet("background: transparent");
+}
+
+void MainWindow::on_btn_History_clicked()
+{
+    // 1. 获取当前要查询的城市 ID (拼音)
+    QString cityId = ui->lineEdit_City->text().trimmed();
+
+    // 如果输入框是空的，默认查北京，或者取当前界面上显示的城市
+    if (cityId.isEmpty()) {
+        cityId = "beijing";
+    }
+
+    // 2. 从数据库获取历史数据列表
+    // 调用我们在 DBManager 中写好的 getHistoryData 函数
+    QList<DayWeather> historyList = DBManager::getInstance().getHistoryData(cityId);
+
+    // 3. 检查是否有数据
+    if (historyList.isEmpty()) {
+        QMessageBox::information(this, "提示",
+                                 "数据库中暂无 [" + cityId + "] 的历史记录。\n\n"
+                                                             "请先点击“查询”按钮获取最新天气，系统会自动积累历史数据。");
+        return;
+    }
+
+    // 4. 调用画图函数
+    // 传入历史列表，并自定义标题
+    // 这里的 cityId 可以替换为 ui->lbl_City->text() 以显示中文城市名，效果更好
+    QString cityName = ui->lbl_City->text();
+    if (cityName.isEmpty()) cityName = cityId;
+
+    drawTempChart(historyList, cityName + " - 历史气温积累");
 }
 
