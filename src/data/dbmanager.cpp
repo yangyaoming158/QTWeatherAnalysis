@@ -49,6 +49,20 @@ bool DBManager::initDB()
         return false;
     }
 
+    // 2. 【新增】创建历史数据表
+    // 关键点：PRIMARY KEY(city_id, date) —— 这就是联合主键！
+    QString sqlHistory = "CREATE TABLE IF NOT EXISTS WeatherHistory ("
+                         "city_id TEXT, "
+                         "date TEXT, "
+                         "high INTEGER, "
+                         "low INTEGER, "
+                         "PRIMARY KEY(city_id, date))"; // <--- 联合主键，防止重复
+
+    if (!query.exec(sqlHistory)) {
+        qDebug() << "创建历史表失败:" << query.lastError();
+        return false;
+    }
+
     qDebug() << "Database init success! Path:" << dbPath;
     return true;
 }
@@ -104,4 +118,54 @@ QByteArray DBManager::getWeatherCache(const QString &cityId)
 
     // 没查到数据
     return QByteArray();
+}
+
+// 【新增】插入逻辑
+bool DBManager::insertHistoryData(const QString &cityId, const QString &date, int high, int low)
+{
+    if (!m_db.isOpen() && !initDB()) return false;
+
+    QSqlQuery query;
+    // 使用 INSERT OR REPLACE：
+    // 如果 (city_id + date) 已经存在，就更新数据（比如修正了温度预测）。
+    // 如果不存在，就插入新行。
+    // 完美解决了你担心的“两天重叠”问题。
+    QString sql = "INSERT OR REPLACE INTO WeatherHistory (city_id, date, high, low) "
+                  "VALUES (:cityid, :date, :high, :low)";
+
+    query.prepare(sql);
+    query.bindValue(":cityid", cityId);
+    query.bindValue(":date", date);
+    query.bindValue(":high", high);
+    query.bindValue(":low", low);
+
+    if (!query.exec()) {
+        qDebug() << "插入历史失败:" << query.lastError();
+        return false;
+    }
+    return true;
+}
+
+// 【新增】查询逻辑
+QList<DayWeather> DBManager::getHistoryData(const QString &cityId)
+{
+    QList<DayWeather> list;
+    if (!m_db.isOpen() && !initDB()) return list;
+
+    QSqlQuery query;
+    // 按日期升序排列，这样画图时线是顺的
+    query.prepare("SELECT date, high, low FROM WeatherHistory WHERE city_id = :id ORDER BY date ASC");
+    query.bindValue(":id", cityId);
+
+    if (query.exec()) {
+        while (query.next()) {
+            DayWeather day;
+            day.date = query.value("date").toString();
+            day.high = query.value("high").toInt();
+            day.low = query.value("low").toInt();
+            // 注意：历史表里没存 week 和 type，如果需要也可以加上，这里主要为了画图
+            list.append(day);
+        }
+    }
+    return list;
 }

@@ -8,6 +8,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QCoreApplication>
+#include "weatherdata.h"
 
 class DBManager : public QObject
 {
@@ -27,6 +28,14 @@ public:
     // 参数: 城市ID
     // 返回: 缓存的JSON数据 (如果不存在或过期，返回空字节数组)
     QByteArray getWeatherCache(const QString &cityId);
+
+    // 【新增】插入单条历史天气数据
+    // 返回 true 表示插入或更新成功
+    bool insertHistoryData(const QString &cityId, const QString &date, int high, int low);
+
+    // 【新增】查询某个城市的历史趋势（按日期排序）
+    // 返回结构体列表，用于画图
+    QList<DayWeather> getHistoryData(const QString &cityId);
 
 private:
     explicit DBManager(QObject *parent = nullptr);

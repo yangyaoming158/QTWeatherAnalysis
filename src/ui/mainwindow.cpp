@@ -63,6 +63,13 @@ void MainWindow::onWeatherReceived(QString cityId, QByteArray data)
     // 这里的 weather.city 是中文名（如“北京”），cityId 是拼音（如“beijing”）
     DBManager::getInstance().cacheWeather(cityId, weather.city, data);
 
+    // 4. 【新增】存历史数据 (遍历 forecast 列表)
+    // 这里我们把未来3天的数据都拆开存进去
+    for (const DayWeather &day : weather.forecast) {
+        // 参数：拼音ID, 日期(2026-01-06), 最高温, 最低温
+        DBManager::getInstance().insertHistoryData(cityId, day.date, day.high, day.low);
+    }
+
     qDebug() << "数据已更新并缓存数据库";
 }
 
