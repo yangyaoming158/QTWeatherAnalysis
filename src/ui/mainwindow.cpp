@@ -165,32 +165,27 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list,QString title)
 
 void MainWindow::on_btn_History_clicked()
 {
-    // 1. 获取当前要查询的城市 ID (拼音)
+    // 1. 获取输入框的城市 ID
     QString cityId = ui->lineEdit_City->text().trimmed();
+    if (cityId.isEmpty()) cityId = "beijing"; // 默认
 
-    // 如果输入框是空的，默认查北京，或者取当前界面上显示的城市
-    if (cityId.isEmpty()) {
-        cityId = "beijing";
-    }
-
-    // 2. 从数据库获取历史数据列表
-    // 调用我们在 DBManager 中写好的 getHistoryData 函数
+    // 2. 查历史数据
     QList<DayWeather> historyList = DBManager::getInstance().getHistoryData(cityId);
 
-    // 3. 检查是否有数据
     if (historyList.isEmpty()) {
-        QMessageBox::information(this, "提示",
-                                 "数据库中暂无 [" + cityId + "] 的历史记录。\n\n"
-                                                             "请先点击“查询”按钮获取最新天气，系统会自动积累历史数据。");
+        QMessageBox::information(this, "提示", "没有找到 " + cityId + " 的历史数据。");
         return;
     }
 
-    // 4. 调用画图函数
-    // 传入历史列表，并自定义标题
-    // 这里的 cityId 可以替换为 ui->lbl_City->text() 以显示中文城市名，效果更好
-    QString cityName = ui->lbl_City->text();
-    if (cityName.isEmpty()) cityName = cityId;
+    // 3. 【核心修复】更新上方的文字标签
+    // 因为是看历史，"实时温度"和"湿度"已经没有意义了，容易产生误解，建议清空或改名
 
-    drawTempChart(historyList, cityName + " - 历史气温积累");
+    ui->lbl_City->setText(cityId); // 显示当前查询的城市拼音
+    ui->lbl_Temp->setText("历史");  // 把温度改成文字，提示模式变化
+    ui->lbl_Type->setText("数据回顾"); // 把天气改成描述
+    ui->lbl_Shidu->clear();        // 历史数据通常不记录实时湿度，直接清空
+
+    // 4. 画图
+    drawTempChart(historyList, cityId + " - 历史气温积累");
 }
 
