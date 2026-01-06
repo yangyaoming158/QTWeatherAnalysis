@@ -1,29 +1,43 @@
-/* 全局背景：深邃的星空紫 */
-QMainWindow, QWidget#centralwidget {
-    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #2b5876, stop:1 #4e4376);
+/* 全局设定 */
+QWidget {
+    font-family: "Microsoft YaHei";
+    font-size: 14px;
 }
 
-/* 标签 */
+/* 背景：深蓝紫色渐变 */
+QMainWindow, QWidget#centralwidget {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #0f2027, stop:0.5 #203a43, stop:1 #2c5364);
+}
+
+/* 标签：稍微灰一点的白，夜间不刺眼 */
 QLabel {
-    color: #E0E0E0; /* 稍微灰一点的白，护眼 */
-    font-family: "Microsoft YaHei";
+    color: #E0E0E0; 
+    font-weight: bold;
+}
+
+/* 按钮：深色背景 */
+QPushButton {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid #555;
+    color: #CCC;
+    border-radius: 5px;
+    padding: 6px 12px;
+}
+QPushButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid #888;
 }
 
 /* 输入框 */
 QLineEdit {
-    border: 1px solid #666;
-    border-radius: 15px;
-    padding: 5px 15px;
-    background-color: rgba(0, 0, 0, 0.3); /* 半透明黑 */
-    color: #DDD;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid #555;
+    border-radius: 5px;
+    color: #CCC;
+    padding: 4px;
 }
-
-/* 按钮 */
-QPushButton {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #DDD;
-    border: 1px solid #888;
-    border-radius: 15px;
-    padding: 5px 15px;
+QLineEdit:focus {
+    border: 1px solid #AAA;
+    background-color: rgba(0, 0, 0, 0.5);
 }
-QPushButton:hover { background-color: rgba(255, 255, 255, 0.2); }

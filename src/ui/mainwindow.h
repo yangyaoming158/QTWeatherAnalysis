@@ -27,7 +27,7 @@ private slots:
     void on_btn_History_clicked();
 
 
-    void on_btn_Theme_clicked();
+    void switchTheme();
 
 private:
     Ui::MainWindow *ui;

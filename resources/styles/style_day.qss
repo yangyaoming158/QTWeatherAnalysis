@@ -1,29 +1,45 @@
-/* 全局背景：清爽的渐变蓝 */
+/* 全局设定 */
+QWidget {
+    font-family: "Microsoft YaHei";
+    font-size: 14px;
+}
+
+/* 背景渐变 */
 QMainWindow, QWidget#centralwidget {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #4facfe, stop:1 #00f2fe);
 }
 
-/* 标签通用样式 */
+/* 标签文字：纯白，带一点阴影增加可读性 */
 QLabel {
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+/* 按钮：半透明白色，鼠标悬停变实心 */
+QPushButton {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     color: white;
-    font-family: "Microsoft YaHei";
+    border-radius: 5px;
+    padding: 6px 12px;
+}
+QPushButton:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 1px solid white;
+}
+QPushButton:pressed {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 输入框 */
 QLineEdit {
-    border: 1px solid white;
-    border-radius: 15px;
-    padding: 5px 15px;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 5px;
     color: white;
+    padding: 4px;
 }
-
-/* 按钮 */
-QPushButton {
-    background-color: rgba(255, 255, 255, 0.8);
-    color: #4facfe;
-    border-radius: 15px;
-    padding: 5px 15px;
-    font-weight: bold;
+QLineEdit:focus {
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 1px solid white;
 }
-QPushButton:hover { background-color: white; }

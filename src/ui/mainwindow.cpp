@@ -12,8 +12,12 @@ MainWindow::MainWindow(QWidget *parent)
     // 1. 初始化网络管理器
     m_weatherMgr = new WeatherManager(this);
 
+    // 1. 初始化变量 (确保默认为 false)
+    m_isNight = false;
     // 2. 连接信号
     connect(m_weatherMgr, &WeatherManager::weatherReceived, this, &MainWindow::onWeatherReceived);
+    // 【新增】手动连接，确保只连一次
+    connect(ui->btn_Theme, &QPushButton::clicked, this, &MainWindow::switchTheme);
     connect(m_weatherMgr, &WeatherManager::errorOccurred, this, [](QString err){
         qDebug() << "Error:" << err;
     });
@@ -22,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_weatherMgr->getWeather("beijing");
     // 【新增】程序启动时，加载默认主题
     updateStyle();
+
 }
 
 MainWindow::~MainWindow()
@@ -152,7 +157,8 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list,QString title)
     // Y 轴 (保持不变)
     QValueAxis *axisY = new QValueAxis();
     axisY->setRange(minTemp - 3, maxTemp + 3);
-    axisY->setLabelFormat("%d" + QString(QChar(0xB0)) + "C");
+    // 【修改为】使用 \u00B0，这是 C++ 标准的 Unicode 写法，不受文件编码影响
+    axisY->setLabelFormat(QStringLiteral("%d\u00B0C"));
     axisY->setLabelsColor(Qt::white);
     axisY->setGridLineVisible(true);
     chart->addAxis(axisY, Qt::AlignLeft);
@@ -192,30 +198,29 @@ void MainWindow::on_btn_History_clicked()
 }
 
 
-void MainWindow::on_btn_Theme_clicked()
+// 2. 修改函数名
+void MainWindow::switchTheme() // 原来叫 on_btn_Theme_clicked
 {
-    m_isNight = !m_isNight; // 状态取反
+    m_isNight = !m_isNight;
     updateStyle();
 }
 
 // 核心换肤函数
 void MainWindow::updateStyle()
 {
-    // 根据状态选择文件路径
-    QString qssPath = m_isNight ? ":/resources/styles/style_night.qss" : ":/resources/styles/style_day.qss";
+    // 【修改点】严格按照你截图中的路径来写 (双斜杠)
+    QString qssPath = m_isNight ? "://resources/styles/style_night.qss"
+                                : "://resources/styles/style_day.qss";
 
     QFile file(qssPath);
     if (file.open(QFile::ReadOnly)) {
-        // 读取全部内容
         QString styleSheet = QLatin1String(file.readAll());
-
-        // 【关键】设置给全局应用程序，这样所有窗口都会生效
         qApp->setStyleSheet(styleSheet);
-
         file.close();
-        qDebug() << "Theme changed to:" << qssPath;
+        qDebug() << "成功切换主题:" << qssPath;
     } else {
-        qDebug() << "Style file not found:" << qssPath;
+        // 如果这里打印了，说明路径还是不对，或者文件没被编译进去
+        qDebug() << "依然找不到文件:" << qssPath;
     }
 }
 
