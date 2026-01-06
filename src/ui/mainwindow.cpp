@@ -78,78 +78,67 @@ void MainWindow::updateUI(const TodayWeather &weather)
     drawTempChart(weather.forecast);
 }
 
-void MainWindow::drawTempChart(const QList<DayWeather> &forecast)
+void MainWindow::drawTempChart(const QList<DayWeather> &list)
 {
-    // 如果没有数据，直接返回，防止崩溃
-    if (forecast.isEmpty()) return;
+    if (list.isEmpty()) return;
 
+    // 1. 创建图表对象
     QChart *chart = new QChart();
-
-    // --- 1. 背景透明化 ---
     chart->setBackgroundRoundness(0);
-    chart->setBackgroundVisible(false); // 隐藏图表背景，透出窗口背景
+    chart->setBackgroundVisible(false);
+    chart->setTitle("气温趋势"); // 标题可以是通用的
+    chart->setTitleBrush(Qt::white);
+    chart->legend()->setVisible(false);
 
-    // --- 2. 设置标题 ---
-    chart->setTitle("未来气温趋势");
-    chart->setTitleBrush(Qt::white); // 标题白色
-    chart->legend()->setVisible(false); // 隐藏图例
-
-    // --- 3. 创建曲线 ---
+    // 2. 创建曲线
     QLineSeries *highSeries = new QLineSeries();
     QLineSeries *lowSeries = new QLineSeries();
 
-    // --- 4. 填充数据并计算极值 ---
-    int minTemp = 100; // 初始设一个很大的数
-    int maxTemp = -100; // 初始设一个很小的数
+    // 3. 填充数据 (核心修改部分)
     QStringList categories;
+    int minTemp = 100;
+    int maxTemp = -100;
 
-    for (int i = 0; i < forecast.size(); ++i) {
-        highSeries->append(i, forecast[i].high);
-        lowSeries->append(i, forecast[i].low);
-        // 【修改点：优化 X 轴标签】
-        // 原代码: categories << list[i].week;
+    for (int i = 0; i < list.size(); ++i) {
+        // X 轴的位置就是 i (0, 1, 2...)，不管实际日期差几天，它们在图上都是相邻的
+        highSeries->append(i, list[i].high);
+        lowSeries->append(i, list[i].low);
 
-        // 新代码: 解析日期字符串 "2026-01-05" -> "01/05 周一"
-        QDate date = QDate::fromString(forecast[i].date, "yyyy-MM-dd");
-        QString label = date.toString("MM/dd") + "\n" + forecast[i].week; // \n 换行显示更美观
-        categories << label;
+        // 【修改点】 X 轴标签只显示日期 (MM/dd)
+        // 解析数据库里的 "2026-01-06"
+        QDate date = QDate::fromString(list[i].date, "yyyy-MM-dd");
 
-        // 动态计算最大最小值，用于自动缩放Y轴
-        if (forecast[i].low < minTemp) minTemp = forecast[i].low;
-        if (forecast[i].high > maxTemp) maxTemp = forecast[i].high;
+        // 格式化为 "01/06" (去掉星期几)
+        categories << date.toString("MM/dd");
+
+        // 计算极值用于缩放 Y 轴
+        if (list[i].low < minTemp) minTemp = list[i].low;
+        if (list[i].high > maxTemp) maxTemp = list[i].high;
     }
 
     chart->addSeries(highSeries);
     chart->addSeries(lowSeries);
 
-    // --- 5. 线条美化与数值显示 ---
-    QPen highPen(Qt::red);
-    highPen.setWidth(3);
-    highSeries->setPen(highPen);
-    highSeries->setPointLabelsVisible(true);        // 显示数值
-    highSeries->setPointLabelsFormat("@yPoint°");   // 格式：数值°
-    highSeries->setPointLabelsColor(Qt::white);     // 白色字
+    // 4. 设置线条样式 (保持不变)
+    QPen highPen(Qt::red); highPen.setWidth(3); highSeries->setPen(highPen);
+    highSeries->setPointLabelsVisible(true); highSeries->setPointLabelsFormat("@yPoint°"); highSeries->setPointLabelsColor(Qt::white);
 
-    QPen lowPen(Qt::blue);
-    lowPen.setWidth(3);
-    lowSeries->setPen(lowPen);
-    lowSeries->setPointLabelsVisible(true);
-    lowSeries->setPointLabelsFormat("@yPoint°");
-    lowSeries->setPointLabelsColor(Qt::white);
+    QPen lowPen(Qt::blue); lowPen.setWidth(3); lowSeries->setPen(lowPen);
+    lowSeries->setPointLabelsVisible(true); lowSeries->setPointLabelsFormat("@yPoint°"); lowSeries->setPointLabelsColor(Qt::white);
 
-    // --- 6. 坐标轴设置 ---
+    // 5. 设置坐标轴
+    // X 轴：使用 QBarCategoryAxis，它会按顺序显示我们刚才塞进去的 categories
     QBarCategoryAxis *axisX = new QBarCategoryAxis();
     axisX->append(categories);
     axisX->setLabelsColor(Qt::white);
-    axisX->setGridLineVisible(false); // 隐藏竖向网格线，更清爽
+    axisX->setGridLineVisible(false);
     chart->addAxis(axisX, Qt::AlignBottom);
     highSeries->attachAxis(axisX);
     lowSeries->attachAxis(axisX);
 
+    // Y 轴 (保持不变)
     QValueAxis *axisY = new QValueAxis();
-    // 动态设置范围：上下各留 3 度缓冲空间
     axisY->setRange(minTemp - 3, maxTemp + 3);
-    // 修复乱码：使用 Unicode 编码显示 °C
     axisY->setLabelFormat(QString("%d%1C").arg(QChar(0x00B0)));
     axisY->setLabelsColor(Qt::white);
     axisY->setGridLineVisible(true);
@@ -157,9 +146,9 @@ void MainWindow::drawTempChart(const QList<DayWeather> &forecast)
     highSeries->attachAxis(axisY);
     lowSeries->attachAxis(axisY);
 
-    // --- 7. 显示 ---
+    // 6. 显示
     ui->chartView->setChart(chart);
-    ui->chartView->setRenderHint(QPainter::Antialiasing); // 抗锯齿
-    ui->chartView->setStyleSheet("background: transparent"); // View 本身透明
+    ui->chartView->setRenderHint(QPainter::Antialiasing);
+    ui->chartView->setStyleSheet("background: transparent");
 }
 
