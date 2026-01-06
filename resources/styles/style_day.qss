@@ -1,0 +1,29 @@
+/* 全局背景：清爽的渐变蓝 */
+QMainWindow, QWidget#centralwidget {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #4facfe, stop:1 #00f2fe);
+}
+
+/* 标签通用样式 */
+QLabel {
+    color: white;
+    font-family: "Microsoft YaHei";
+}
+
+/* 输入框 */
+QLineEdit {
+    border: 1px solid white;
+    border-radius: 15px;
+    padding: 5px 15px;
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+/* 按钮 */
+QPushButton {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #4facfe;
+    border-radius: 15px;
+    padding: 5px 15px;
+    font-weight: bold;
+}
+QPushButton:hover { background-color: white; }

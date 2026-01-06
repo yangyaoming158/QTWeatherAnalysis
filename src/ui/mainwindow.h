@@ -26,9 +26,14 @@ private slots:
     void onWeatherReceived(QString cityId, QByteArray data);
     void on_btn_History_clicked();
 
+
+    void on_btn_Theme_clicked();
+
 private:
     Ui::MainWindow *ui;
     WeatherManager *m_weatherMgr;
+    bool m_isNight; // 记录当前是否是夜间模式
+    void updateStyle(); // 切换样式的辅助函数
 
     // 【核心】更新 UI 显示
     void updateUI(const TodayWeather &weather);

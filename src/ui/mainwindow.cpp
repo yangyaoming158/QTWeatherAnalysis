@@ -20,6 +20,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 3. 默认查北京
     m_weatherMgr->getWeather("beijing");
+    // 【新增】程序启动时，加载默认主题
+    updateStyle();
 }
 
 MainWindow::~MainWindow()
@@ -187,5 +189,33 @@ void MainWindow::on_btn_History_clicked()
 
     // 4. 画图
     drawTempChart(historyList, cityId + " - 历史气温积累");
+}
+
+
+void MainWindow::on_btn_Theme_clicked()
+{
+    m_isNight = !m_isNight; // 状态取反
+    updateStyle();
+}
+
+// 核心换肤函数
+void MainWindow::updateStyle()
+{
+    // 根据状态选择文件路径
+    QString qssPath = m_isNight ? ":/styles/style_night.qss" : ":/styles/style_day.qss";
+
+    QFile file(qssPath);
+    if (file.open(QFile::ReadOnly)) {
+        // 读取全部内容
+        QString styleSheet = QLatin1String(file.readAll());
+
+        // 【关键】设置给全局应用程序，这样所有窗口都会生效
+        qApp->setStyleSheet(styleSheet);
+
+        file.close();
+        qDebug() << "Theme changed to:" << qssPath;
+    } else {
+        qDebug() << "Style file not found:" << qssPath;
+    }
 }
 

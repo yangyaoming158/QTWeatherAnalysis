@@ -47,6 +47,7 @@ set(PROJECT_SOURCES
 qt_add_executable(WeatherAnalysis
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
+    resources.qrc
 )
 
 target_link_libraries(WeatherAnalysis PRIVATE
