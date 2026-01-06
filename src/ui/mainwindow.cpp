@@ -152,7 +152,7 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list,QString title)
     // Y 轴 (保持不变)
     QValueAxis *axisY = new QValueAxis();
     axisY->setRange(minTemp - 3, maxTemp + 3);
-    axisY->setLabelFormat(QString("%d%1C").arg(QChar(0x00B0)));
+    axisY->setLabelFormat("%d" + QString(QChar(0xB0)) + "C");
     axisY->setLabelsColor(Qt::white);
     axisY->setGridLineVisible(true);
     chart->addAxis(axisY, Qt::AlignLeft);
@@ -202,7 +202,7 @@ void MainWindow::on_btn_Theme_clicked()
 void MainWindow::updateStyle()
 {
     // 根据状态选择文件路径
-    QString qssPath = m_isNight ? ":/styles/style_night.qss" : ":/styles/style_day.qss";
+    QString qssPath = m_isNight ? ":/resources/styles/style_night.qss" : ":/resources/styles/style_day.qss";
 
     QFile file(qssPath);
     if (file.open(QFile::ReadOnly)) {
