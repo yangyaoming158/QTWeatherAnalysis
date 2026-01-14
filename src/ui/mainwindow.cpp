@@ -99,6 +99,7 @@ void MainWindow::onWeatherReceived(QString cityId, QByteArray data)
 
 void MainWindow::updateUI(const TodayWeather &weather)
 {
+    ui->lbl_Temp->setStyleSheet("font-size: 72px;"); // 恢复大字体显示温度
     // 更新文本信息
     ui->lbl_City->setText(weather.city);
     ui->lbl_Temp->setText(weather.wendu + "°C");
@@ -195,28 +196,38 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list, QString title)
 
 void MainWindow::on_btn_History_clicked()
 {
-    // 1. 获取输入框的城市 ID
     QString cityId = ui->lineEdit_City->text().trimmed();
-    if (cityId.isEmpty()) cityId = "beijing"; // 默认
+    if (cityId.isEmpty()) cityId = "beijing";
 
-    // 2. 查历史数据
+    // 1. 查数据库
     QList<DayWeather> historyList = DBManager::getInstance().getHistoryData(cityId);
 
     if (historyList.isEmpty()) {
-        QMessageBox::information(this, "提示", "没有找到 " + cityId + " 的历史数据。");
+        QMessageBox::information(this, "提示", "暂无历史数据，请先查询以积累数据。");
         return;
     }
 
-    // 3. 【核心修复】更新上方的文字标签
-    // 因为是看历史，"实时温度"和"湿度"已经没有意义了，容易产生误解，建议清空或改名
+    // 2. 【UI美化核心】计算时间跨度 & 格式化文字
+    QString startDate = historyList.first().date.mid(5); // 去掉年份，取 "01-06"
+    QString endDate = historyList.last().date.mid(5);    // 取 "01-16"
 
-    ui->lbl_City->setText(cityId); // 显示当前查询的城市拼音
-    ui->lbl_Temp->setText("历史");  // 把温度改成文字，提示模式变化
-    ui->lbl_Type->setText("数据回顾"); // 把天气改成描述
-    ui->lbl_Shidu->clear();        // 历史数据通常不记录实时湿度，直接清空
+    // 首字母大写 (beijing -> Beijing)
+    QString displayName = cityId;
+    if(!displayName.isEmpty()) displayName[0] = displayName[0].toUpper();
 
-    // 4. 画图
-    drawTempChart(historyList, cityId + " - 历史气温积累");
+    // 3. 更新界面标签
+    ui->lbl_City->setText(displayName);
+    ui->lbl_Temp->setText("历史趋势");      // 原本显示温度的大字，现在显示标题
+    ui->lbl_Temp->setStyleSheet("font-size: 40px;"); // 稍微调小一点，不然“历史趋势”四个字太大了
+
+    ui->lbl_Type->setText(QString("%1 至 %2").arg(startDate, endDate)); // 显示时间范围
+    ui->lbl_Shidu->setText("共 " + QString::number(historyList.count()) + " 条记录"); // 显示数据量
+
+    // 4. 确保 Tab 切回“气温趋势”页 (防止用户在列表页点历史按钮)
+    ui->tabWidget->setCurrentIndex(0); // 假设 0 是图表页
+
+    // 5. 画图
+    drawTempChart(historyList, displayName + " - 历史气温积累");
 }
 
 
