@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtCharts> // 引入图表库
+#include <QSqlTableModel>
 #include "weathermanager.h"
 #include "weatherdata.h"
 
@@ -40,5 +41,9 @@ private:
 
     // 【核心】绘制温度折线图
     void drawTempChart(const QList<DayWeather> &list,QString title = "气温趋势");
+
+    QSqlTableModel *m_model; // 数据模型
+    void initModel();        // 初始化模型的函数
+
 };
 #endif // MAINWINDOW_H

@@ -137,13 +137,30 @@
      </layout>
     </item>
     <item>
-     <widget class="QChartView" name="chartView" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>1</number>
       </property>
+      <widget class="QWidget" name="tab_Chart">
+       <attribute name="title">
+        <string>气温趋势</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QChartView" name="chartView" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_History">
+       <attribute name="title">
+        <string>历史列表</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QTableView" name="tableView_History"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -154,7 +171,7 @@
      <x>0</x>
      <y>0</y>
      <width>646</width>
-     <height>18</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

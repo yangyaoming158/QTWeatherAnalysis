@@ -37,6 +37,9 @@ public:
     // 返回结构体列表，用于画图
     QList<DayWeather> getHistoryData(const QString &cityId);
 
+    // 【新增】获取数据库连接对象的接口
+    QSqlDatabase getDatabase();
+
 private:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();
@@ -49,6 +52,8 @@ private:
 
     // 设置缓存过期时间 (例如 1 小时 = 3600 秒)
     const int CACHE_EXPIRE_SECONDS = 3600;
+
+
 };
 
 #endif // DBMANAGER_H

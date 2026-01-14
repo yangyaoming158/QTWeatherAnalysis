@@ -9,6 +9,15 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // 【核心修复 1】: 必须最先初始化数据库！
+    // 只有这一步成功了，后面的 initModel 拿到的才是活的连接
+    if (!DBManager::getInstance().initDB()) {
+        QMessageBox::critical(this, "错误", "数据库初始化失败，程序无法正常运行！");
+    }
+
+    // 【核心修复 2】: 确保这行代码在 initDB 之后
+    initModel();
+
     // 1. 初始化网络管理器
     m_weatherMgr = new WeatherManager(this);
 
@@ -21,11 +30,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_weatherMgr, &WeatherManager::errorOccurred, this, [](QString err){
         qDebug() << "Error:" << err;
     });
-
     // 3. 默认查北京
     m_weatherMgr->getWeather("beijing");
     // 【新增】程序启动时，加载默认主题
     updateStyle();
+
+
 
 }
 
@@ -37,47 +47,54 @@ MainWindow::~MainWindow()
 void MainWindow::on_btn_Search_clicked()
 {
     QString cityId = ui->lineEdit_City->text().trimmed();
-    if (cityId.isEmpty()) return;
+    if (cityId.isEmpty()) cityId = "beijing"; // 默认
 
-    // 1. 先尝试从数据库获取缓存
-    // 注意：cityId 在这里就是用户输入的拼音，如 "beijing"
     QByteArray cachedData = DBManager::getInstance().getWeatherCache(cityId);
 
     if (!cachedData.isEmpty()) {
-        qDebug() << "命中缓存，使用数据库数据 -> " << cityId;
+        qDebug() << "Hit Cache (命中缓存) ->" << cityId;
 
-        // 2. 如果有缓存且没过期，直接解析显示
         TodayWeather weather = JsonHelper::parseWeatherJson(cachedData);
         updateUI(weather);
+
+        // --- 【新增代码：补全历史数据】 ---
+        // 即使是缓存的数据，也要尝试存入历史表，保证历史表里有数据
+        for (const DayWeather &day : weather.forecast) {
+            DBManager::getInstance().insertHistoryData(cityId, day.date, day.high, day.low);
+        }
+        // -------------------------------
     }
     else {
+        // ... 无缓存逻辑保持不变 ...
         qDebug() << "无缓存或已过期，发起网络请求 -> " << cityId;
-
-        // 3. 如果没缓存，发起网络请求
         m_weatherMgr->getWeather(cityId);
     }
+
+    // --- 刷新表格 ---
+    m_model->setFilter(QString("city_id = '%1'").arg(cityId));
+    m_model->select();
 }
 
 void MainWindow::onWeatherReceived(QString cityId, QByteArray data)
 {
-    // 1. 解析数据
+    // 1. 解析 & 2. 更新界面 & 3. 存缓存 (原代码不变)
     TodayWeather weather = JsonHelper::parseWeatherJson(data);
-
-    // 2. 更新界面
     updateUI(weather);
-
-    // 3. 【新增】存入数据库缓存
-    // 这里的 weather.city 是中文名（如“北京”），cityId 是拼音（如“beijing”）
     DBManager::getInstance().cacheWeather(cityId, weather.city, data);
 
-    // 4. 【新增】存历史数据 (遍历 forecast 列表)
-    // 这里我们把未来3天的数据都拆开存进去
+    // 4. 存历史数据 (原代码不变)
     for (const DayWeather &day : weather.forecast) {
-        // 参数：拼音ID, 日期(2026-01-06), 最高温, 最低温
         DBManager::getInstance().insertHistoryData(cityId, day.date, day.high, day.low);
     }
 
-    qDebug() << "数据已更新并缓存数据库";
+    // --- 【新增代码：核心修复】 ---
+    // 数据存进去了，现在通知表格刷新显示！
+    // 1. 确保过滤器是对的 (只显示当前城市)
+    m_model->setFilter(QString("city_id = '%1'").arg(cityId));
+    // 2. 重新从数据库载入
+    m_model->select();
+
+    qDebug() << "历史表已刷新，行数：" << m_model->rowCount();
 }
 
 void MainWindow::updateUI(const TodayWeather &weather)
@@ -92,40 +109,39 @@ void MainWindow::updateUI(const TodayWeather &weather)
     drawTempChart(weather.forecast,"未来气温趋势");
 }
 
-void MainWindow::drawTempChart(const QList<DayWeather> &list,QString title)
+void MainWindow::drawTempChart(const QList<DayWeather> &list, QString title)
 {
     if (list.isEmpty()) return;
 
-    // 1. 创建图表对象
+    // 【核心修改 1】根据日夜模式决定文字颜色
+    // 夜间(true) -> 白色； 日间(false) -> 黑色
+     QColor textColor = m_isNight ? Qt::white : Qt::black;
+    // 网格线颜色也微调一下，日间深一点，夜间淡一点
+    QColor gridColor = m_isNight ? QColor(255, 255, 255, 40) : QColor(0, 0, 0, 40);
+
     QChart *chart = new QChart();
     chart->setBackgroundRoundness(0);
     chart->setBackgroundVisible(false);
-    chart->setTitle("气温趋势"); // 标题可以是通用的
-    chart->setTitleBrush(Qt::white);
+    chart->setTitle(title);
+
+    // 【修改】标题颜色不再写死 Qt::white
+    chart->setTitleBrush(textColor);
     chart->legend()->setVisible(false);
 
-    // 2. 创建曲线
     QLineSeries *highSeries = new QLineSeries();
     QLineSeries *lowSeries = new QLineSeries();
 
-    // 3. 填充数据 (核心修改部分)
     QStringList categories;
     int minTemp = 100;
     int maxTemp = -100;
 
     for (int i = 0; i < list.size(); ++i) {
-        // X 轴的位置就是 i (0, 1, 2...)，不管实际日期差几天，它们在图上都是相邻的
         highSeries->append(i, list[i].high);
         lowSeries->append(i, list[i].low);
 
-        // 【修改点】 X 轴标签只显示日期 (MM/dd)
-        // 解析数据库里的 "2026-01-06"
         QDate date = QDate::fromString(list[i].date, "yyyy-MM-dd");
-
-        // 格式化为 "01/06" (去掉星期几)
         categories << date.toString("MM/dd");
 
-        // 计算极值用于缩放 Y 轴
         if (list[i].low < minTemp) minTemp = list[i].low;
         if (list[i].high > maxTemp) maxTemp = list[i].high;
     }
@@ -133,39 +149,45 @@ void MainWindow::drawTempChart(const QList<DayWeather> &list,QString title)
     chart->addSeries(highSeries);
     chart->addSeries(lowSeries);
 
-    // 【修改点】使用传入的标题
-    chart->setTitle(title);
-    chart->setTitleBrush(Qt::white);
-
-    // 4. 设置线条样式 (保持不变)
+    // --- 线条与数值 ---
     QPen highPen(Qt::red); highPen.setWidth(3); highSeries->setPen(highPen);
-    highSeries->setPointLabelsVisible(true); highSeries->setPointLabelsFormat("@yPoint°"); highSeries->setPointLabelsColor(Qt::white);
+    highSeries->setPointLabelsVisible(true);
+    highSeries->setPointLabelsFormat("@yPoint°");
+    highSeries->setPointLabelsColor(textColor); // 【修改】跟随主题
 
     QPen lowPen(Qt::blue); lowPen.setWidth(3); lowSeries->setPen(lowPen);
-    lowSeries->setPointLabelsVisible(true); lowSeries->setPointLabelsFormat("@yPoint°"); lowSeries->setPointLabelsColor(Qt::white);
+    lowSeries->setPointLabelsVisible(true);
+    lowSeries->setPointLabelsFormat("@yPoint°");
+    lowSeries->setPointLabelsColor(textColor); // 【修改】跟随主题
 
-    // 5. 设置坐标轴
-    // X 轴：使用 QBarCategoryAxis，它会按顺序显示我们刚才塞进去的 categories
+    // --- X 轴 ---
     QBarCategoryAxis *axisX = new QBarCategoryAxis();
     axisX->append(categories);
-    axisX->setLabelsColor(Qt::white);
+    axisX->setLabelsColor(textColor); // 【修改】跟随主题
     axisX->setGridLineVisible(false);
+    axisX->setLinePen(QPen(textColor)); // 轴线颜色
     chart->addAxis(axisX, Qt::AlignBottom);
     highSeries->attachAxis(axisX);
     lowSeries->attachAxis(axisX);
 
-    // Y 轴 (保持不变)
+    // --- Y 轴 ---
     QValueAxis *axisY = new QValueAxis();
     axisY->setRange(minTemp - 3, maxTemp + 3);
-    // 【修改为】使用 \u00B0，这是 C++ 标准的 Unicode 写法，不受文件编码影响
-    axisY->setLabelFormat(QStringLiteral("%d\u00B0C"));
-    axisY->setLabelsColor(Qt::white);
-    axisY->setGridLineVisible(true);
+    // 使用标准 Unicode 防止乱码
+    axisY->setLabelFormat("%d C");
+
+    axisY->setLabelsColor(textColor); // 【修改】跟随主题
+
+    // 网格线设为虚线
+    QPen gridPen(gridColor);
+    gridPen.setStyle(Qt::DashLine);
+    axisY->setGridLinePen(gridPen);
+
     chart->addAxis(axisY, Qt::AlignLeft);
     highSeries->attachAxis(axisY);
     lowSeries->attachAxis(axisY);
 
-    // 6. 显示
+    // 显示
     ui->chartView->setChart(chart);
     ui->chartView->setRenderHint(QPainter::Antialiasing);
     ui->chartView->setStyleSheet("background: transparent");
@@ -198,11 +220,18 @@ void MainWindow::on_btn_History_clicked()
 }
 
 
-// 2. 修改函数名
-void MainWindow::switchTheme() // 原来叫 on_btn_Theme_clicked
+void MainWindow::switchTheme()
 {
     m_isNight = !m_isNight;
     updateStyle();
+
+    // 【新增】强制刷新图表颜色
+    // 逻辑：如果输入框里有城市，就假装用户又点了一次搜索，或者手动重画
+    QString cityId = ui->lineEdit_City->text();
+    if (!cityId.isEmpty()) {
+        // 重新调用搜索逻辑，这会触发 drawTempChart，使用新的 m_isNight 颜色
+        on_btn_Search_clicked();
+    }
 }
 
 // 核心换肤函数
@@ -222,5 +251,51 @@ void MainWindow::updateStyle()
         // 如果这里打印了，说明路径还是不对，或者文件没被编译进去
         qDebug() << "依然找不到文件:" << qssPath;
     }
+}
+
+void MainWindow::initModel()
+{
+    // 获取 DBManager 里的连接名
+    QSqlDatabase db = DBManager::getInstance().getDatabase();
+    qDebug() << "Model 使用的数据库连接名:" << db.connectionName();
+    qDebug() << "数据库是否打开:" << db.isOpen();
+    qDebug() << "数据库路径:" << db.databaseName();
+    // 重新实例化 Model，确保用的是同一个 db
+    m_model = new QSqlTableModel(this, db);
+    m_model->setTable("WeatherHistory");
+
+    // 2. 设置列名别名 (Model)
+    m_model->setHeaderData(m_model->fieldIndex("city_id"), Qt::Horizontal, "城市ID");
+    m_model->setHeaderData(m_model->fieldIndex("date"), Qt::Horizontal, "日期");
+    m_model->setHeaderData(m_model->fieldIndex("high"), Qt::Horizontal, "最高温");
+    m_model->setHeaderData(m_model->fieldIndex("low"), Qt::Horizontal, "最低温");
+
+    // 3. 绑定到视图 (View)
+    ui->tableView_History->setModel(m_model);
+
+    // --- 【新增美化代码】 ---
+
+    // 1. 让列宽自动铺满整个表格 (平均分配宽度)
+    // 这一步最关键！加上后就不会左边挤一坨，右边空一大块了
+    ui->tableView_History->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    // 2. 隐藏最左边的行号 (1, 2, 3, 4...)
+    // 也就是垂直表头，通常不需要显示，隐藏后更清爽
+    ui->tableView_History->verticalHeader()->setVisible(false);
+
+    // 3. 启用隔行变色 (斑马纹)，提升阅读体验
+    ui->tableView_History->setAlternatingRowColors(true);
+
+    // 4. 设置行高 (稍微高一点，不那么挤)
+    ui->tableView_History->verticalHeader()->setDefaultSectionSize(40);
+
+
+    // 4. 视觉优化
+    ui->tableView_History->setEditTriggers(QAbstractItemView::NoEditTriggers); // 禁止编辑
+    ui->tableView_History->setSelectionBehavior(QAbstractItemView::SelectRows); // 选中整行
+    ui->tableView_History->setAlternatingRowColors(true); // 隔行变色
+
+    // 5. 加载数据
+    m_model->select();
 }
 

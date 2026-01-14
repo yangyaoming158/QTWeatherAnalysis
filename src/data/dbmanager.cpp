@@ -126,10 +126,6 @@ bool DBManager::insertHistoryData(const QString &cityId, const QString &date, in
     if (!m_db.isOpen() && !initDB()) return false;
 
     QSqlQuery query;
-    // 使用 INSERT OR REPLACE：
-    // 如果 (city_id + date) 已经存在，就更新数据（比如修正了温度预测）。
-    // 如果不存在，就插入新行。
-    // 完美解决了你担心的“两天重叠”问题。
     QString sql = "INSERT OR REPLACE INTO WeatherHistory (city_id, date, high, low) "
                   "VALUES (:cityid, :date, :high, :low)";
 
@@ -139,11 +135,19 @@ bool DBManager::insertHistoryData(const QString &cityId, const QString &date, in
     query.bindValue(":high", high);
     query.bindValue(":low", low);
 
-    if (!query.exec()) {
-        qDebug() << "插入历史失败:" << query.lastError();
-        return false;
+    bool success = query.exec(); // 执行
+
+    // 【新增调试代码】
+    if (!success) {
+        // 如果插入失败，打印具体原因！
+        qDebug() << "❌ 插入历史失败! ID:" << cityId << " Date:" << date
+                 << " Error:" << query.lastError().text();
+    } else {
+        // 如果成功，也打印一下，确认真的插进去了
+        qDebug() << "✅ 插入成功: " << cityId << date;
     }
-    return true;
+
+    return success;
 }
 
 // 【新增】查询逻辑
@@ -168,4 +172,9 @@ QList<DayWeather> DBManager::getHistoryData(const QString &cityId)
         }
     }
     return list;
+}
+
+QSqlDatabase DBManager::getDatabase()
+{
+    return m_db;
 }

@@ -1,4 +1,4 @@
-/* 全局设定 */
+/* ================= 全局 ================= */
 QWidget {
     font-family: "Microsoft YaHei";
     font-size: 14px;
@@ -9,37 +9,93 @@ QMainWindow, QWidget#centralwidget {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 #4facfe, stop:1 #00f2fe);
 }
 
-/* 标签文字：纯白，带一点阴影增加可读性 */
+/* 标签文字 */
 QLabel {
-    color: #FFFFFF;
-    font-weight: bold;
-}
-
-/* 按钮：半透明白色，鼠标悬停变实心 */
-QPushButton {
-    background-color: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.5);
     color: white;
-    border-radius: 5px;
+    background: transparent;
+}
+QLabel#lbl_Temp { font-size: 72px; font-family: "Arial"; }
+QLabel#lbl_City { font-size: 28px; font-weight: bold; }
+
+/* 按钮 */
+QPushButton {
+    background-color: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 6px;
+    color: white;
     padding: 6px 12px;
 }
-QPushButton:hover {
-    background-color: rgba(255, 255, 255, 0.4);
-    border: 1px solid white;
-}
-QPushButton:pressed {
-    background-color: rgba(255, 255, 255, 0.1);
-}
+QPushButton:hover { background-color: rgba(255, 255, 255, 0.4); }
+QPushButton:pressed { background-color: rgba(255, 255, 255, 0.15); }
 
 /* 输入框 */
 QLineEdit {
     background-color: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
     color: white;
     padding: 4px;
 }
-QLineEdit:focus {
-    background-color: rgba(255, 255, 255, 0.4);
-    border: 1px solid white;
+
+/* ================= Tab Widget 美化 ================= */
+QTabWidget::pane {
+    border: none; /* 去掉边框 */
+    background: transparent; /* 背景透明，透出渐变 */
+}
+
+QTabWidget::tab-bar {
+    alignment: center; /* 标签居中 */
+}
+
+QTabBar::tab {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 20px;
+    margin-right: 5px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+QTabBar::tab:selected {
+    background: rgba(255, 255, 255, 0.5); /* 选中变亮 */
+    font-weight: bold;
+}
+
+/* ================= 表格整体 ================= */
+QTableView {
+    /* 背景：半透明乳白色，像一张纸 */
+    background-color: rgba(255, 255, 255, 0.9); 
+    /* 边框：圆角 */
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    /* 文字颜色 */
+    color: #333333;
+    /* 网格线颜色：淡淡的灰 */
+    gridline-color: #dddddd;
+    /* 选中文本的颜色 */
+    selection-color: white;
+    selection-background-color: #4facfe;
+}
+/* ================= 顶部表头 (城市ID, 日期...) ================= */
+QHeaderView::section {
+    /* 背景：深一点的蓝，与主色调呼应 */
+    background-color: #4facfe;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    border: none;
+    padding: 6px;
+    /* 只有第一列左上角圆角，最后一列右上角圆角？
+       Qt QSS 这里比较难完美，先统一设个边框 */
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ================= 滚动条美化 (可选) ================= */
+QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+}
+QScrollBar::handle:vertical {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
 }
