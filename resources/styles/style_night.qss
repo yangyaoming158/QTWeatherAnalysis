@@ -63,3 +63,22 @@ QHeaderView::section {
     border: none;
     padding: 4px;
 }
+/* ===========================================
+   专门修复 QMessageBox (弹窗) 的样式 - 夜间模式
+   =========================================== */
+
+QMessageBox {
+    background-color: #2c3e50; /* 深色背景 */
+}
+
+QMessageBox QLabel {
+    color: #ffffff; /* 白色文字 */
+}
+
+QMessageBox QPushButton {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid #555555;
+    border-radius: 4px;
+    padding: 6px 15px;
+}

@@ -40,6 +40,11 @@ public:
     // 【新增】获取数据库连接对象的接口
     QSqlDatabase getDatabase();
 
+    // 【新增】查询“纯历史”数据（不含今天及未来），且最多只查最近 6 条
+    QList<DayWeather> getRecentHistory(const QString &cityId);
+    // 【新增】根据拼音ID获取中文城市名 (从缓存表中查)
+    QString getCityName(const QString &cityId);
+
 private:
     explicit DBManager(QObject *parent = nullptr);
     ~DBManager();

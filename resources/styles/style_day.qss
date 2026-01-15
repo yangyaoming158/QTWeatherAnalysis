@@ -99,3 +99,27 @@ QScrollBar::handle:vertical {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
 }
+
+QMessageBox {
+    background-color: white; /* 弹窗背景设为白色 */
+}
+
+/* 强制弹窗里的文字变成深灰色，覆盖全局的白色设置 */
+QMessageBox QLabel {
+    color: #333333; 
+    background-color: transparent;
+}
+
+/* 美化弹窗里的按钮 (否则按钮文字可能也是白的看不见) */
+QMessageBox QPushButton {
+    color: #333333;
+    background-color: #f0f0f0;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 6px 15px;
+    min-width: 60px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #e0e0e0;
+}

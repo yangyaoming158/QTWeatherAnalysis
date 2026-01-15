@@ -178,3 +178,60 @@ QSqlDatabase DBManager::getDatabase()
 {
     return m_db;
 }
+
+
+// dbmanager.cpp
+
+QList<DayWeather> DBManager::getRecentHistory(const QString &cityId)
+{
+    QList<DayWeather> list;
+    if (!m_db.isOpen() && !initDB()) return list;
+
+    QSqlQuery query;
+
+    // 获取今天的日期 (yyyy-MM-dd)
+    QString today = QDateTime::currentDateTime().toString("yyyy-MM-dd");
+
+    // 【核心 SQL 语句】
+    // 1. 内层查询：WHERE date < :today (只找以前的)，ORDER BY date DESC (找离今天最近的)，LIMIT 6 (只取6条)
+    // 2. 外层查询：把找出来的这 6 条，重新 ORDER BY date ASC (按时间正序排列，方便画图)
+    QString sql = "SELECT * FROM ("
+                  "  SELECT date, high, low FROM WeatherHistory "
+                  "  WHERE city_id = :cityid AND date < :today "
+                  "  ORDER BY date DESC LIMIT 6"
+                  ") ORDER BY date ASC";
+
+    query.prepare(sql);
+    query.bindValue(":cityid", cityId);
+    query.bindValue(":today", today); // 排除今天和未来
+
+    if (query.exec()) {
+        while (query.next()) {
+            DayWeather day;
+            day.date = query.value("date").toString();
+            day.high = query.value("high").toInt();
+            day.low = query.value("low").toInt();
+            list.append(day);
+        }
+    } else {
+        qDebug() << "查询历史失败:" << query.lastError();
+    }
+    return list;
+}
+
+// 1. 实现获取中文名
+QString DBManager::getCityName(const QString &cityId)
+{
+    if (!m_db.isOpen() && !initDB()) return cityId;
+
+    QSqlQuery query;
+    // 从 WeatherCache 表中查找 city_name
+    query.prepare("SELECT city_name FROM WeatherCache WHERE city_id = :id");
+    query.bindValue(":id", cityId);
+
+    if (query.exec() && query.next()) {
+        QString name = query.value("city_name").toString();
+        if (!name.isEmpty()) return name;
+    }
+    return cityId; // 如果查不到（或者没缓存），就这就返回拼音
+}
